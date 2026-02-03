@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Art Generator</title>
+    <style>
+        /* --- CSS STYLING & ANIMATIONS --- */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: white;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Main Card Design */
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            animation: fadeIn 1.5s ease-in-out;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            background: -webkit-linear-gradient(#00c6ff, #0072ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p { color: #ddd; font-size: 0.9rem; margin-bottom: 20px; }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 15px;
+            border-radius: 10px;
+            border: none;
+            outline: none;
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 1rem;
+            resize: none;
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5);
+            transition: 0.3s;
+            box-sizing: border-box; 
+        }
+
+        textarea:focus { background: rgba(255, 255, 255, 0.1); border: 1px solid #00c6ff; }
+
+        button {
+            margin-top: 20px;
+            padding: 12px 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(90deg, #00c6ff, #0072ff);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px #00c6ff;
+        }
+
+        button:active { transform: scale(0.95); }
+
+        /* Image Display Area */
+        #image-container {
+            margin-top: 25px;
+            min-height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        img {
+            max-width: 100%;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            animation: popIn 0.5s ease-out;
+        }
+
+        /* Loading Spinner Animation */
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #00c6ff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            display: none; /* Hidden by default */
+        }
+
+        /* Keyframe Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>AI Image Generator</h1>
+        <p>Describe your idea, and the AI will create it.</p>
+        
+        <textarea id="prompt" placeholder="Ex: A cyberpunk city with neon lights, realistic, 8k..."></textarea>
+        
+        <button onclick="generateImage()">Generate Art ✨</button>
+        
+        <div id="image-container">
+            <div class="loader" id="loader"></div>
+        </div>
+    </div>
+
+    <script>
+        // 🔴 IMPORTANT: Replace this with your Hugging Face API Token
+        const API_KEY = "YOUR_HUGGING_FACE_TOKEN_HERE"; 
+
+        async function generateImage() {
+            const promptText = document.getElementById('prompt').value;
+            const loader = document.getElementById('loader');
+            const container = document.getElementById('image-container');
+
+            // Validation
+            if (promptText.trim() === "") {
+                alert("Please enter a description first!");
+                return;
+            }
+
+            // Show Loader & Clear previous image
+            loader.style.display = "block";
+            // Remove old image but keep loader
+            const oldImg = container.querySelector('img');
+            if(oldImg) oldImg.remove();
+
+            try {
+                // Fetching from Hugging Face API (Stable Diffusion Model)
+                const response = await fetch(
+                    "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
+                    {
+                        headers: { 
+                            Authorization: `Bearer ${API_KEY}`,
+                            "Content-Type": "application/json"
+                        },
+                        method: "POST",
+                        body: JSON.stringify({ inputs: promptText }),
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error("Failed to generate image. Check API Key.");
+                }
+
+                const blob = await response.blob();
+                const imgUrl = URL.createObjectURL(blob);
+                
+                // Create and show image
+                const img = document.createElement('img');
+                img.src = imgUrl;
+                container.appendChild(img);
+
+            } catch (error) {
+                console.error(error);
+                alert("Error: " + error.message);
+            } finally {
+                // Hide Loader
+                loader.style.display = "none";
+            }
+        }
+    </script>
+
+</body>
+</html>
